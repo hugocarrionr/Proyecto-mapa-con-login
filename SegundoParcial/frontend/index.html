@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapa de Examen</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h1>Mis Lugares</h1>
+            <button onclick="logout()" style="background-color: #dc3545;">Cerrar Sesión</button>
+        </div>
+
+        <div id="map"></div>
+
+        <div class="form-box">
+            <h3>Añadir Nuevo Lugar</h3>
+            <input type="text" id="nombre" placeholder="Nombre del lugar" required>
+            <input type="text" id="descripcion" placeholder="Descripción breve">
+            <label style="display: block; margin-top: 10px;">Foto:</label>
+            <input type="file" id="imagen" accept="image/*">
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <input type="text" id="lat" placeholder="Latitud" readonly>
+                <input type="text" id="lng" placeholder="Longitud" readonly>
+            </div>
+            <button onclick="crearLugar()" style="width: 100%; margin-top: 10px; background-color: #28a745;">Guardar Lugar</button>
+        </div>
+
+        <div id="lista-lugares"><p>Cargando...</p></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+    <script>
+        window.onload = function() {
+            checkAuth();
+            initMap();
+            cargarLugares();
+        };
+    </script>
+</body>
+</html>

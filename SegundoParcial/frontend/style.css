@@ -1,0 +1,9 @@
+body { font-family: sans-serif; margin: 0; padding: 20px; display: flex; justify-content: center; }
+.container { max-width: 800px; width: 100%; }
+form { display: flex; flex-direction: column; gap: 10px; max-width: 300px; margin: 0 auto; }
+input { padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+button { padding: 10px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px; }
+button:hover { background: #0056b3; }
+.error { color: red; display: none; text-align: center; }
+#map { height: 400px; width: 100%; margin: 20px 0; border: 1px solid #ccc; border-radius: 8px;}
+.form-box { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd; }
