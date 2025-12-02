@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:8000"; 
+const API_URL = "https://proyecto-mapa-con-login.onrender.com"; 
 
 // --- CONFIGURACIÓN CLOUDINARY ---
 const CLOUD_NAME = "dly4a0pgx"; // <--- ¡RELLENA ESTO!
