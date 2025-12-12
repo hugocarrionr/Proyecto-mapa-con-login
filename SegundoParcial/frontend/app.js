@@ -1,51 +1,38 @@
-// --- CONFIGURACIÓN URL ---
-// 1. Descomenta esta para PROBAR EN LOCAL:
+// --- CONFIGURACIÓN ---
+// 1. LOCAL:
 //const API_URL = "http://localhost:8000"; 
-
-// 2. Descomenta esta para PRODUCCIÓN (NUBE):
+// 2. NUBE:
  const API_URL = "https://proyecto-mapa-con-login.onrender.com"; 
 
-
-// --- CONFIGURACIÓN CLOUDINARY ---
 const CLOUD_NAME = "dly4a0pgx"; 
 const CLOUDINARY_PRESET = "examen_preset"; 
 const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
 
-let map, marker;
-
-// --- GOOGLE LOGIN (NUEVO) ---
-async function handleCredentialResponse(response) {
-    console.log("Google Token recibido...");
-    try {
-        const res = await fetch(`${API_URL}/google-login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ token: response.credential })
-        });
-
-        if (!res.ok) throw new Error("Fallo en el backend con Google");
-
-        const data = await res.json();
-        
-        // Guardamos token y redirigimos
-        localStorage.setItem('token', data.access_token);
-        window.location.href = 'index.html';
-
-    } catch (error) {
-        console.error("Error:", error);
-        alert("Error al iniciar sesión con Google");
-    }
-}
+let map;
 
 // --- AUTH ---
-function checkAuth() {
-    if (!localStorage.getItem('token')) window.location.href = 'login.html';
-}
 function logout() {
     localStorage.removeItem('token');
     window.location.href = 'login.html';
+}
+
+async function handleCredentialResponse(response) {
+    console.log("Token Google recibido...");
+    try {
+        const res = await fetch(`${API_URL}/google-login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: response.credential })
+        });
+
+        if (!res.ok) throw new Error("Fallo en validación Google");
+        const data = await res.json();
+        localStorage.setItem('token', data.access_token);
+        window.location.href = 'index.html';
+    } catch (error) {
+        console.error(error);
+        alert("Error al entrar con Google");
+    }
 }
 
 const loginForm = document.getElementById('loginForm');
@@ -80,80 +67,127 @@ if (loginForm) {
 function initMap() {
     if (!document.getElementById('map')) return;
     map = L.map('map').setView([36.7213, -4.4214], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: 'OSM'}).addTo(map);
-    
-    map.on('click', function(e) {
-        const lat = e.latlng.lat;
-        const lng = e.latlng.lng;
-        document.getElementById('lat').value = lat.toFixed(6);
-        document.getElementById('lng').value = lng.toFixed(6);
-        if (marker) map.removeLayer(marker);
-        marker = L.marker([lat, lng]).addTo(map);
-    });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+}
+
+// --- GEOCODING ---
+async function geocodificar() {
+    const dir = document.getElementById('direccion').value;
+    if(!dir) return alert("Escribe una dirección");
+
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${dir}`);
+    const data = await res.json();
+
+    if(data.length > 0) {
+        const lat = data[0].lat;
+        const lng = data[0].lon;
+        document.getElementById('lat').value = lat;
+        document.getElementById('lng').value = lng;
+        map.setView([lat, lng], 16);
+        L.marker([lat, lng]).addTo(map).bindPopup("Ubicación seleccionada").openPopup();
+    } else {
+        alert("Dirección no encontrada");
+    }
+}
+
+async function centrarMapa() {
+    const dir = document.getElementById('buscarMapa').value;
+    if(!dir) return;
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${dir}`);
+    const data = await res.json();
+    if(data.length > 0) {
+        map.setView([data[0].lat, data[0].lon], 15);
+        L.marker([data[0].lat, data[0].lon]).addTo(map).bindPopup(dir).openPopup();
+    }
 }
 
 // --- CLOUDINARY ---
 async function subirImagen(file) {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', CLOUDINARY_PRESET);
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLOUDINARY_PRESET);
     try {
-        const res = await fetch(CLOUDINARY_URL, {method: 'POST', body: formData});
-        const data = await res.json();
-        return data.secure_url;
-    } catch (e) { console.error(e); return null; }
+        const res = await fetch(CLOUDINARY_URL, {method:'POST', body:fd});
+        return (await res.json()).secure_url;
+    } catch(e) { return null; }
 }
 
-// --- CRUD ---
-async function crearLugar() {
+// --- CRUD RESEÑAS ---
+async function guardarResena() {
     const nombre = document.getElementById('nombre').value;
     const lat = document.getElementById('lat').value;
     const lng = document.getElementById('lng').value;
-    const fileInput = document.getElementById('imagen');
-    const token = localStorage.getItem('token');
+    const val = document.getElementById('valoracion').value;
+    const file = document.getElementById('imagen').files[0];
 
-    if (!nombre || !lat) return alert("Faltan datos");
+    if(!nombre || !lat) return alert("Faltan datos (haz clic en Buscar Coordenadas)");
 
-    let imagenUrl = "";
-    if (fileInput.files.length > 0) {
-        document.querySelector('button').innerText = "Subiendo...";
-        imagenUrl = await subirImagen(fileInput.files[0]);
-        document.querySelector('button').innerText = "Guardar Lugar";
+    let imgUrl = "";
+    if(file) {
+        document.querySelector('button[onclick="guardarResena()"]').innerText = "Subiendo...";
+        imgUrl = await subirImagen(file);
     }
 
     const datos = {
-        nombre: nombre,
-        descripcion: document.getElementById('descripcion').value,
+        nombre_establecimiento: nombre,
+        direccion: document.getElementById('direccion').value,
         latitud: parseFloat(lat),
         longitud: parseFloat(lng),
-        imagen_url: imagenUrl
+        valoracion: parseInt(val),
+        imagen_url: imgUrl
     };
 
-    const res = await fetch(`${API_URL}/lugares`, {
+    const res = await fetch(`${API_URL}/resenas`, {
         method: 'POST',
-        headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
         body: JSON.stringify(datos)
     });
 
-    if (res.ok) {
-        alert("Guardado!");
+    if(res.ok) {
+        alert("Reseña guardada!");
         location.reload();
     } else {
         alert("Error al guardar");
     }
 }
 
-async function cargarLugares() {
-    if (!document.getElementById('lista-lugares')) return;
-    const res = await fetch(`${API_URL}/lugares`);
-    const lugares = await res.json();
-    const div = document.getElementById('lista-lugares');
-    div.innerHTML = "<h3>Lugares</h3>";
-    
-    lugares.forEach(l => {
-        const imgHtml = l.imagen_url ? `<img src="${l.imagen_url}" style="max-width:200px; display:block; margin-top:5px;">` : '';
-        div.innerHTML += `<div style="border-bottom:1px solid #ccc; padding:10px;"><b>${l.nombre}</b><br>${l.descripcion}<br>${imgHtml}</div>`;
-        const popup = `<b>${l.nombre}</b><br>${imgHtml}`;
-        L.marker([l.latitud, l.longitud]).addTo(map).bindPopup(popup);
+async function cargarResenas() {
+    if (!document.getElementById('lista-resenas')) return;
+    const res = await fetch(`${API_URL}/resenas`, {
+        headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}
+    });
+    const lista = await res.json();
+    const div = document.getElementById('lista-resenas');
+    div.innerHTML = "";
+
+    lista.forEach(r => {
+        const imgHtml = r.imagen_url ? `<img src="${r.imagen_url}" style="width:100px; display:block; margin:5px 0;">` : '';
+        
+        // --- DETALLES TÉCNICOS ---
+        const detallesTecnicos = `
+            <details style="margin-top:5px; font-size:0.8em; color:gray;">
+                <summary>Ver detalles técnicos (Token)</summary>
+                <p><b>Autor:</b> ${r.autor_email}</p>
+                <p><b>Emitido:</b> ${r.token_emision}</p> <p><b>Caduca:</b> ${r.token_expira}</p>
+                <p style="word-break:break-all;"><b>Token RAW:</b> ${r.token_usado}</p>
+            </details>
+        `;
+
+        div.innerHTML += `
+            <div class="card" style="border:1px solid #ccc; margin-bottom:10px; padding:10px;">
+                <h4>${r.nombre_establecimiento} (${r.valoracion} ⭐)</h4>
+                <p>📍 ${r.direccion}</p>
+                ${imgHtml}
+                ${detallesTecnicos}
+            </div>
+        `;
+
+        if(map) {
+            L.marker([r.latitud, r.longitud]).addTo(map)
+                .bindPopup(`<b>${r.nombre_establecimiento}</b><br>${r.valoracion} estrellas`);
+        }
     });
 }

@@ -2,42 +2,68 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Mapa de Examen</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <title>ReViews - Examen</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
     <div class="container">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h1>Mis Lugares</h1>
-            <button onclick="logout()" style="background-color: #dc3545;">Cerrar Sesión</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h1>⭐ ReViews</h1>
+            <button onclick="logout()" style="background:red;">Salir</button>
         </div>
-
-        <div id="map"></div>
 
         <div class="form-box">
-            <h3>Añadir Nuevo Lugar</h3>
-            <input type="text" id="nombre" placeholder="Nombre del lugar" required>
-            <input type="text" id="descripcion" placeholder="Descripción breve">
-            <label style="display: block; margin-top: 10px;">Foto:</label>
-            <input type="file" id="imagen" accept="image/*">
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <input type="text" id="lat" placeholder="Latitud" readonly>
-                <input type="text" id="lng" placeholder="Longitud" readonly>
+            <h3>Nueva Reseña</h3>
+            <input type="text" id="nombre" placeholder="Nombre Establecimiento (Ej: Casa Lola)" required>
+            
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="direccion" placeholder="Dirección Postal (Ej: Calle Larios, Málaga)">
+                <button onclick="geocodificar()" style="background:#17a2b8;">📍 Buscar Coordenadas</button>
             </div>
-            <button onclick="crearLugar()" style="width: 100%; margin-top: 10px; background-color: #28a745;">Guardar Lugar</button>
+            <div style="display:flex; gap:5px; margin-top:5px;">
+                <input type="text" id="lat" placeholder="Lat" readonly>
+                <input type="text" id="lng" placeholder="Lng" readonly>
+            </div>
+
+            <label style="margin-top:10px; display:block;">Valoración (0-5):</label>
+            <select id="valoracion">
+                <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+                <option value="4">⭐⭐⭐⭐ (4)</option>
+                <option value="3">⭐⭐⭐ (3)</option>
+                <option value="2">⭐⭐ (2)</option>
+                <option value="1">⭐ (1)</option>
+                <option value="0">💩 (0)</option>
+            </select>
+
+            <label style="margin-top:10px; display:block;">Foto del sitio:</label>
+            <input type="file" id="imagen">
+
+            <button onclick="guardarResena()" style="margin-top:15px; width:100%;">Publicar Reseña</button>
         </div>
 
-        <div id="lista-lugares"><p>Cargando...</p></div>
+        <hr>
+
+        <h3>Mapa de Reseñas</h3>
+        <div style="display:flex; gap:5px; margin-bottom:10px;">
+            <input type="text" id="buscarMapa" placeholder="Centrar mapa en dirección...">
+            <button onclick="centrarMapa()" style="background:#ffc107; color:black;">🔍 Ir</button>
+        </div>
+        <div id="map" style="height: 300px; border-radius:8px; margin-bottom:20px;"></div>
+
+        <h3>Últimas Reseñas</h3>
+        <div id="lista-resenas">Cargando...</div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="app.js"></script>
     <script>
         window.onload = function() {
-            checkAuth();
+            // Protección Auth
+            if(!localStorage.getItem('token')) window.location.href = 'login.html';
+            
             initMap();
-            cargarLugares();
+            cargarResenas();
         };
     </script>
 </body>
