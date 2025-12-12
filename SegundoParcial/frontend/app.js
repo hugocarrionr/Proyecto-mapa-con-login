@@ -1,11 +1,43 @@
-const API_URL = "https://proyecto-mapa-con-login.onrender.com"; 
+// --- CONFIGURACIÓN URL ---
+// 1. Descomenta esta para PROBAR EN LOCAL:
+//const API_URL = "http://localhost:8000"; 
+
+// 2. Descomenta esta para PRODUCCIÓN (NUBE):
+ const API_URL = "https://proyecto-mapa-con-login.onrender.com"; 
+
 
 // --- CONFIGURACIÓN CLOUDINARY ---
-const CLOUD_NAME = "dly4a0pgx"; // <--- ¡RELLENA ESTO!
+const CLOUD_NAME = "dly4a0pgx"; 
 const CLOUDINARY_PRESET = "examen_preset"; 
 const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
 
 let map, marker;
+
+// --- GOOGLE LOGIN (NUEVO) ---
+async function handleCredentialResponse(response) {
+    console.log("Google Token recibido...");
+    try {
+        const res = await fetch(`${API_URL}/google-login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ token: response.credential })
+        });
+
+        if (!res.ok) throw new Error("Fallo en el backend con Google");
+
+        const data = await res.json();
+        
+        // Guardamos token y redirigimos
+        localStorage.setItem('token', data.access_token);
+        window.location.href = 'index.html';
+
+    } catch (error) {
+        console.error("Error:", error);
+        alert("Error al iniciar sesión con Google");
+    }
+}
 
 // --- AUTH ---
 function checkAuth() {

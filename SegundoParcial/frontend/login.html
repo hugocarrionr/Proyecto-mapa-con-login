@@ -4,17 +4,36 @@
     <meta charset="UTF-8">
     <title>Login - Examen</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
     <div class="container">
         <h2>Iniciar Sesión</h2>
+        
         <form id="loginForm">
             <input type="text" id="email" placeholder="Email" required>
             <input type="password" id="password" placeholder="Contraseña" required>
             <button type="submit">Entrar</button>
         </form>
         <p id="errorMsg" class="error">Credenciales incorrectas</p>
+
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ccc;">
+        <p style="text-align: center; color: #666;">O accede con Google:</p>
+
+        <div id="g_id_onload"
+             data-client_id="1056114087976-l4huskim3dpijrms6j8brmqj6ha0h0rh.apps.googleusercontent.com"
+             data-callback="handleCredentialResponse">
+        </div>
+        <div class="g_id_signin" 
+             data-type="standard" 
+             data-size="large" 
+             data-theme="outline" 
+             data-text="sign_in_with" 
+             data-shape="rectangular" 
+             data-logo_alignment="left">
+        </div>
     </div>
+    
     <script src="app.js"></script>
 </body>
 </html>

@@ -9,10 +9,16 @@ from passlib.context import CryptContext
 from jose import jwt, JWTError
 import os
 from dotenv import load_dotenv
+# --- IMPORTS GOOGLE ---
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 # 1. CONFIGURACIÓN
 load_dotenv()
 app = FastAPI(title="Backend Lite Examen")
+
+# TU CLIENT ID DE GOOGLE
+GOOGLE_CLIENT_ID = "1056114087976-l4huskim3dpijrms6j8brmqj6ha0h0rh.apps.googleusercontent.com"
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,7 +29,9 @@ app.add_middleware(
 )
 
 client = MongoClient(os.getenv("MONGO_URI"))
-db = client[os.getenv("MONGO_DB", "test_db")]
+# Usamos la variable de entorno o 'test_db' por defecto
+db_name = os.getenv("MONGO_DB", "test_db")
+db = client[db_name]
 users_collection = db["usuarios"]
 lugares_collection = db["lugares"]
 
@@ -50,6 +58,10 @@ class LugarCreate(LugarBase):
 class LugarOut(LugarBase):
     id: str
     owner: str
+
+# Modelo para recibir el token de Google
+class GoogleLogin(BaseModel):
+    token: str
 
 # 3. SEGURIDAD
 def get_password_hash(password):
@@ -96,6 +108,36 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
     token = create_access_token(data={"sub": user["email"]})
     return {"access_token": token, "token_type": "bearer"}
 
+# --- RUTA NUEVA: LOGIN CON GOOGLE ---
+@app.post("/google-login")
+def google_login(item: GoogleLogin):
+    try:
+        # 1. Verificar el token con Google
+        idinfo = id_token.verify_oauth2_token(
+            item.token, 
+            google_requests.Request(), 
+            GOOGLE_CLIENT_ID
+        )
+
+        # 2. Obtener email
+        email = idinfo['email']
+        
+        # 3. Buscar si existe en BD, si no, crear al vuelo
+        user = users_collection.find_one({"email": email})
+        
+        if not user:
+            # Crear usuario con contraseña dummy (nunca se usará para login normal)
+            dummy_password = get_password_hash("google_auth_" + os.urandom(10).hex())
+            users_collection.insert_one({"email": email, "password": dummy_password})
+        
+        # 4. Generar NUESTRO token JWT
+        access_token = create_access_token(data={"sub": email})
+        return {"access_token": access_token, "token_type": "bearer"}
+
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Token de Google inválido")
+
+# --- RUTAS LUGARES ---
 @app.get("/lugares", response_model=List[LugarOut])
 def get_lugares():
     lugares = []
